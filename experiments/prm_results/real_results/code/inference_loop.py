@@ -2005,9 +2005,7 @@ class ProperAdaptationAnalyzer:
                 
                 all_results.append(result)
                 
-                # Save intermediate results
-                if (idx + 1) % 10 == 0:
-                    self._save_results(all_results, output_path / "intermediate_results.json")
+                # Skip intermediate saves - only save final results
                 
             except Exception as e:
                 print(f"Error analyzing problem {idx}: {e}")
@@ -2186,7 +2184,7 @@ def test_attention_tracking():
     """Test the attention tracking system."""
     
     # Initialize model and tracker
-    model_name = "gpt2"  # Use small model for testing
+    model_name = "Qwen/Qwen2.5-Math-7B"  # Use proper math model for testing
     model = AutoModelForCausalLM.from_pretrained(model_name, output_attentions=True)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
@@ -2215,7 +2213,7 @@ def test_token_analysis():
     """Test token-level analysis."""
     
     # Initialize
-    model_name = "gpt2"
+    model_name = "Qwen/Qwen2.5-Math-7B"
     model = AutoModelForCausalLM.from_pretrained(model_name)
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     tokenizer.pad_token = tokenizer.eos_token
@@ -2263,7 +2261,7 @@ def main():
         '--model',
         type=str,
         default="Qwen/Qwen2.5-Math-7B",
-        help="Model to analyze"
+        help="Model to analyze (use Qwen/Qwen2.5-7B-Instruct for non-math datasets)"
     )
     parser.add_argument(
         '--dataset',
@@ -2318,10 +2316,11 @@ def main():
             injection_points=args.injection_points
         )
         
-        # Save result
+        # Save result  
         output_path = Path(args.output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
-        analyzer._save_results([result], output_path / "single_test_result.json")
+        analyzer._save_results([result], output_path / "final_results.json")
+        analyzer._generate_report([result], output_path / "summary_report.json")
         
         # Print summary
         print("\n" + "="*50)
@@ -2346,9 +2345,9 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print("Running default test (use --help for options)")
         
-        # Use smaller model for testing
+        # Use proper model for testing
         analyzer = ProperAdaptationAnalyzer(
-            model_name="gpt2",  # Small model for testing
+            model_name="Qwen/Qwen2.5-Math-7B",  # Proper math model for testing
             device=None
         )
         
