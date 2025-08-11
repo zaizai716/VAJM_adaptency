@@ -202,11 +202,23 @@ class AttentionTracker:
                 
                 # Concatenate injection KV cache to existing cache
                 if past_key_values is not None and injection_kv is not None:
-                    past_key_values = tuple(
-                        (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
-                         torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
-                        for layer_kv, inj_kv in zip(past_key_values, injection_kv)
-                    )
+                    # Handle different KV cache formats (some models use DynamicCache)
+                    if hasattr(past_key_values, 'key_cache'):
+                        # DynamicCache format - extend the cache
+                        for layer_idx, (inj_key, inj_val) in enumerate(injection_kv):
+                            past_key_values.key_cache[layer_idx] = torch.cat([
+                                past_key_values.key_cache[layer_idx], inj_key
+                            ], dim=2)
+                            past_key_values.value_cache[layer_idx] = torch.cat([
+                                past_key_values.value_cache[layer_idx], inj_val  
+                            ], dim=2)
+                    else:
+                        # Standard tuple format
+                        past_key_values = tuple(
+                            (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                             torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                            for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                        )
                 
             # Calculate attention distribution
             if self.current_attention_weights:
@@ -549,11 +561,23 @@ class AdaptationMetrics:
                     
                     # Concatenate injection KV cache to existing cache
                     if past_key_values is not None and injection_kv is not None:
-                        past_key_values = tuple(
-                            (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
-                             torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
-                            for layer_kv, inj_kv in zip(past_key_values, injection_kv)
-                        )
+                        # Handle different KV cache formats (some models use DynamicCache)
+                        if hasattr(past_key_values, 'key_cache'):
+                            # DynamicCache format - extend the cache
+                            for layer_idx, (inj_key, inj_val) in enumerate(injection_kv):
+                                past_key_values.key_cache[layer_idx] = torch.cat([
+                                    past_key_values.key_cache[layer_idx], inj_key
+                                ], dim=2)
+                                past_key_values.value_cache[layer_idx] = torch.cat([
+                                    past_key_values.value_cache[layer_idx], inj_val  
+                                ], dim=2)
+                        else:
+                            # Standard tuple format
+                            past_key_values = tuple(
+                                (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                                 torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                                for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                            )
                 
                 # Calculate current state metrics
                 state = self._calculate_state_metrics(
@@ -956,11 +980,23 @@ class TokenLevelAnalyzer:
                     
                     # Concatenate injection KV cache to existing cache
                     if past_key_values is not None and injection_kv is not None:
-                        past_key_values = tuple(
-                            (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
-                             torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
-                            for layer_kv, inj_kv in zip(past_key_values, injection_kv)
-                        )
+                        # Handle different KV cache formats (some models use DynamicCache)
+                        if hasattr(past_key_values, 'key_cache'):
+                            # DynamicCache format - extend the cache
+                            for layer_idx, (inj_key, inj_val) in enumerate(injection_kv):
+                                past_key_values.key_cache[layer_idx] = torch.cat([
+                                    past_key_values.key_cache[layer_idx], inj_key
+                                ], dim=2)
+                                past_key_values.value_cache[layer_idx] = torch.cat([
+                                    past_key_values.value_cache[layer_idx], inj_val  
+                                ], dim=2)
+                        else:
+                            # Standard tuple format
+                            past_key_values = tuple(
+                                (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                                 torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                                for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                            )
                 
                 # Continue generation
                 outputs = self.model(
@@ -1509,11 +1545,23 @@ class CausalExperiments:
                     
                     # Concatenate injection KV cache to existing cache
                     if past_key_values is not None and injection_kv is not None:
-                        past_key_values = tuple(
-                            (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
-                             torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
-                            for layer_kv, inj_kv in zip(past_key_values, injection_kv)
-                        )
+                        # Handle different KV cache formats (some models use DynamicCache)
+                        if hasattr(past_key_values, 'key_cache'):
+                            # DynamicCache format - extend the cache
+                            for layer_idx, (inj_key, inj_val) in enumerate(injection_kv):
+                                past_key_values.key_cache[layer_idx] = torch.cat([
+                                    past_key_values.key_cache[layer_idx], inj_key
+                                ], dim=2)
+                                past_key_values.value_cache[layer_idx] = torch.cat([
+                                    past_key_values.value_cache[layer_idx], inj_val  
+                                ], dim=2)
+                        else:
+                            # Standard tuple format
+                            past_key_values = tuple(
+                                (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                                 torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                                for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                            )
                     
                 # Continue generation
                 outputs = self.model(
