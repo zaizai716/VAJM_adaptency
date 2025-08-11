@@ -190,8 +190,23 @@ class AttentionTracker:
             # Inject new context at specified point
             if step == injection_point:
                 injection_ids = self.tokenizer(injection_text, return_tensors="pt").input_ids.to(self.device)
-                # This is where you'd modify the KV cache - simplified here
-                # In practice, you'd concatenate injection embeddings to past_key_values
+                
+                # REAL KV-cache injection - process injection text through model
+                with torch.no_grad():
+                    injection_outputs = self.model(
+                        injection_ids,
+                        use_cache=True,
+                        return_dict=True
+                    )
+                    injection_kv = injection_outputs.past_key_values
+                
+                # Concatenate injection KV cache to existing cache
+                if past_key_values is not None and injection_kv is not None:
+                    past_key_values = tuple(
+                        (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                         torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                        for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                    )
                 
             # Calculate attention distribution
             if self.current_attention_weights:
@@ -523,8 +538,22 @@ class AdaptationMetrics:
                 
                 # Inject context if specified
                 if injection_ids is not None and position == injection_point:
-                    # Simplified injection - in practice, modify past_key_values
-                    pass
+                    # REAL KV-cache injection
+                    with torch.no_grad():
+                        injection_outputs = self.model(
+                            injection_ids,
+                            use_cache=True,
+                            return_dict=True
+                        )
+                        injection_kv = injection_outputs.past_key_values
+                    
+                    # Concatenate injection KV cache to existing cache
+                    if past_key_values is not None and injection_kv is not None:
+                        past_key_values = tuple(
+                            (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                             torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                            for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                        )
                 
                 # Calculate current state metrics
                 state = self._calculate_state_metrics(
@@ -914,9 +943,24 @@ class TokenLevelAnalyzer:
                 
                 # Perform injection if at injection point
                 if position == injection_point:
-                    # Here you would modify past_key_values
-                    # For demonstration, we'll track the injection point
-                    pass
+                    # REAL KV-cache injection using injected_context from reference distributions
+                    injection_ids = self.tokenizer(injected_context, return_tensors="pt").input_ids.to(self.device)
+                    
+                    with torch.no_grad():
+                        injection_outputs = self.model(
+                            injection_ids,
+                            use_cache=True,
+                            return_dict=True
+                        )
+                        injection_kv = injection_outputs.past_key_values
+                    
+                    # Concatenate injection KV cache to existing cache
+                    if past_key_values is not None and injection_kv is not None:
+                        past_key_values = tuple(
+                            (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                             torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                            for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                        )
                 
                 # Continue generation
                 outputs = self.model(
@@ -1452,10 +1496,24 @@ class CausalExperiments:
                 
                 # Check for injection
                 if injection_context and injection_point and step == injection_point:
-                    # Inject new context (simplified - in practice modify KV cache)
+                    # REAL KV-cache injection
                     injection_ids = self.tokenizer(injection_context, return_tensors="pt").input_ids.to(self.device)
-                    # This is where you'd actually modify past_key_values
-                    # For now, we'll concatenate to input
+                    
+                    with torch.no_grad():
+                        injection_outputs = self.model(
+                            injection_ids,
+                            use_cache=True,
+                            return_dict=True
+                        )
+                        injection_kv = injection_outputs.past_key_values
+                    
+                    # Concatenate injection KV cache to existing cache
+                    if past_key_values is not None and injection_kv is not None:
+                        past_key_values = tuple(
+                            (torch.cat([layer_kv[0], inj_kv[0]], dim=2),  # concat keys
+                             torch.cat([layer_kv[1], inj_kv[1]], dim=2))  # concat values
+                            for layer_kv, inj_kv in zip(past_key_values, injection_kv)
+                        )
                     
                 # Continue generation
                 outputs = self.model(
