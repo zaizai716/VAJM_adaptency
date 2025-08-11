@@ -1889,7 +1889,7 @@ class ProperAdaptationAnalyzer:
         self,
         model_name: str = "Qwen/Qwen2.5-Math-7B",
         device: str = None,
-        cache_dir: str = "~/.cache/huggingface/hub"
+        cache_dir: str = None
     ):
         """Initialize analyzer with specified model."""
         
@@ -1907,18 +1907,21 @@ class ProperAdaptationAnalyzer:
         
         # Load model and tokenizer
         print(f"Loading model: {model_name}")
+        # Use default cache directory (automatically detects HuggingFace cache)
+        cache_kwargs = {"cache_dir": cache_dir} if cache_dir else {}
+        
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16 if device != 'cpu' else torch.float32,
             trust_remote_code=True,
-            cache_dir=os.path.expanduser(cache_dir)
+            **cache_kwargs
             # Use default SDPA for speed - no attention tracking needed
         ).to(device)
         
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name,
             trust_remote_code=True,
-            cache_dir=os.path.expanduser(cache_dir)
+            **cache_kwargs
         )
         
         if self.tokenizer.pad_token is None:
